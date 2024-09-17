@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using ProjetoRabbitMQ.Bus;
 using ProjetoRabbitMQ.Relatorios;
 
 namespace ProjetoRabbitMQ.EndPoints
@@ -7,7 +7,7 @@ namespace ProjetoRabbitMQ.EndPoints
     {
         public static void AddApiEndpoints(this WebApplication app)
         {
-            app.MapPost("Solicitar-relatorio/{name}", (string name) =>
+            app.MapPost("Solicitar-relatorio/{name}", async(string name, IPublishBus bus, CancellationToken cancellationToken = default) =>
             {
                 var solicitacao = new SolicitacaoRelatorio()
                 {
@@ -17,6 +17,10 @@ namespace ProjetoRabbitMQ.EndPoints
                     ProcessedTime = null
                 };
                 Lista.Relatorios!.Add(solicitacao);
+
+                var eventRequest = new RelatorioSolicitadoEvent(solicitacao.Id, solicitacao.Name);
+
+                await bus.PublishAsync(eventRequest, cancellationToken);
 
                 return Results.Ok(solicitacao);
             });
